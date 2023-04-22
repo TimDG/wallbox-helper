@@ -15,12 +15,6 @@ def get_form_action_url(soup):
     return form['action']
 
 def submit_meter_reading(session, get_url, reading):
-    last_reading = load_last_reading()
-
-    if last_reading is not None and reading == last_reading:
-        print("Meter reading is the same as the last submitted reading.")
-        return
-
     response = session.get(get_url)
     soup = BeautifulSoup(response.text, "html.parser")
     csrf_token = soup.find("input", {"name": "_token"})["value"]
@@ -73,6 +67,12 @@ if __name__ == '__main__':
     password = '<EVCOUNTER PASSWORD>'
 
     reading = get_meter_reading(wallbox_ip)
+    last_reading = load_last_reading()
+
+    if last_reading is not None and reading == last_reading:
+        print("Meter reading is the same as the last submitted reading.")
+        return
+
     session, new_reading_url = login(username, password)
     if session and new_reading_url:
         submit_meter_reading(session, new_reading_url, reading)
