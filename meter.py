@@ -7,20 +7,12 @@ def get_meter_reading(ip):
     status = response.json()
     return int(status["total_energy"])
 
+def filter_func(tag):
+    return tag.has_attr('data-role') and tag['data-role'] == "meter-value-form"
+
 def get_form_action_url(soup):
-    forms = soup.find_all("form")
-    meter_reading_form = None
-
-    for form in forms:
-        if form.get("id") != "logout":
-            meter_reading_form = form
-            break
-
-    if meter_reading_form is None:
-        print("Meter reading form not found.")
-        return None
-
-    return meter_reading_form["action"]
+    form = soup.find(filter_func)
+    return form['action']
 
 def submit_meter_reading(session, get_url, reading):
     last_reading = load_last_reading()
@@ -34,11 +26,13 @@ def submit_meter_reading(session, get_url, reading):
     csrf_token = soup.find("input", {"name": "_token"})["value"]
     form = soup.find("form", {"id": "meter_reading_form"})
     post_url = get_form_action_url(soup)
+    print(post_url)
     if post_url is None:
         return None
 
-    data = {"meter_reading": reading, "_token": csrf_token}
-    response = session.post(post_url, data=data)
+    data = {"value": reading, "_token": csrf_token}
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    response = session.post(post_url, data=data, headers=headers)
     if response.status_code == 200:
         print("Meter reading submitted successfully!")
         save_last_reading(reading)
